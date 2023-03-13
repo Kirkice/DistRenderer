@@ -93,18 +93,18 @@ set(SHADER_SOURCES ${PROJECT_SOURCE_DIR}/src/shaders/g_buffer.vert
                    ${PROJECT_SOURCE_DIR}/src/shaders/ground_truth/ground_truth_path_trace.rmiss)
 
 if(APPLE)
-    add_executable(HybridRendering MACOSX_BUNDLE ${HYBRID_RENDERING_SOURCES} ${SHADER_SOURCES} ${ASSET_SOURCES})
+    add_executable(DistRenderer MACOSX_BUNDLE ${HYBRID_RENDERING_SOURCES} ${SHADER_SOURCES} ${ASSET_SOURCES})
     set(MACOSX_BUNDLE_BUNDLE_NAME "Hybrid Rendering") 
     set_source_files_properties(${SHADER_SOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/shader)
     set_source_files_properties(${ASSET_SOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 else()
-    add_executable(HybridRendering ${HYBRID_RENDERING_SOURCES} ${SHADER_SOURCES}) 
+    add_executable(DistRenderer ${HYBRID_RENDERING_SOURCES} ${SHADER_SOURCES})
 endif()
 
-target_link_libraries(HybridRendering dwSampleFramework)
+target_link_libraries(DistRenderer dwSampleFramework)
 
 if(CLANG_FORMAT_EXE)
-    add_custom_target(HybridRendering-clang-format COMMAND ${CLANG_FORMAT_EXE} -i -style=file ${HYBRID_RENDERING_SOURCES} ${SHADER_SOURCES})
+    add_custom_target(DistRenderer-clang-format COMMAND ${CLANG_FORMAT_EXE} -i -style=file ${HYBRID_RENDERING_SOURCES} ${SHADER_SOURCES})
 endif()
 
 foreach(GLSL ${SHADER_SOURCES})
@@ -118,8 +118,8 @@ foreach(GLSL ${SHADER_SOURCES})
     list(APPEND SPIRV_BINARY_FILES ${SPIRV})
 endforeach(GLSL)
 
-add_custom_target(HybridRendering_Shaders DEPENDS ${SPIRV_BINARY_FILES})
+add_custom_target(DistRenderer_Shaders DEPENDS ${SPIRV_BINARY_FILES})
 
-add_dependencies(HybridRendering HybridRendering_Shaders)
+add_dependencies(DistRenderer DistRenderer_Shaders)
 
-set_property(TARGET HybridRendering PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/$(Configuration)")
+set_property(TARGET DistRenderer PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/$(Configuration)")
