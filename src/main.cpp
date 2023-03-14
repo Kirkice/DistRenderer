@@ -19,7 +19,7 @@
 #include "temporal_aa.h"
 #include "utilities.h"
 
-class HybridRendering : public dw::Application
+class DisteRenderer : public dw::Application
 {
 public:
     friend class GBuffer;
@@ -214,7 +214,7 @@ protected:
 
         settings.width       = 1920;
         settings.height      = 1080;
-        settings.title       = "Hybrid Rendering (c) Dihara Wijetunga";
+        settings.title       = "Dist Rendering (c) Dihara Wijetunga";
         settings.ray_tracing = true;
 
         return settings;
@@ -265,7 +265,7 @@ private:
             ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
             ImGui::SetNextWindowSize(ImVec2(m_width * 0.3f, m_height));
 
-            if (ImGui::Begin("Hybrid Rendering", &open, window_flags))
+            if (ImGui::Begin("Dist Rendering", &open, window_flags))
             {
                 if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_DefaultOpen))
                 {
@@ -1186,4 +1186,4 @@ private:
     UBO m_ubo_data;
 };
 
-DW_DECLARE_MAIN(HybridRendering)
+DW_DECLARE_MAIN(DisteRenderer)

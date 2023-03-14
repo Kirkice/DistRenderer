@@ -17,7 +17,7 @@ endif()
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
-set(HYBRID_RENDERING_SOURCES ${PROJECT_SOURCE_DIR}/src/main.cpp
+set(DIST_RENDERING_SOURCES ${PROJECT_SOURCE_DIR}/src/main.cpp
                              ${PROJECT_SOURCE_DIR}/src/ddgi.cpp
                              ${PROJECT_SOURCE_DIR}/src/ground_truth_path_tracer.cpp
                              ${PROJECT_SOURCE_DIR}/src/ray_traced_ao.cpp
@@ -93,18 +93,18 @@ set(SHADER_SOURCES ${PROJECT_SOURCE_DIR}/src/shaders/g_buffer.vert
                    ${PROJECT_SOURCE_DIR}/src/shaders/ground_truth/ground_truth_path_trace.rmiss)
 
 if(APPLE)
-    add_executable(DistRenderer MACOSX_BUNDLE ${HYBRID_RENDERING_SOURCES} ${SHADER_SOURCES} ${ASSET_SOURCES})
-    set(MACOSX_BUNDLE_BUNDLE_NAME "Hybrid Rendering") 
+    add_executable(DistRenderer MACOSX_BUNDLE ${DIST_RENDERING_SOURCES} ${SHADER_SOURCES} ${ASSET_SOURCES})
+    set(MACOSX_BUNDLE_BUNDLE_NAME "Dist Rendering")
     set_source_files_properties(${SHADER_SOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/shader)
     set_source_files_properties(${ASSET_SOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 else()
-    add_executable(DistRenderer ${HYBRID_RENDERING_SOURCES} ${SHADER_SOURCES})
+    add_executable(DistRenderer ${DIST_RENDERING_SOURCES} ${SHADER_SOURCES})
 endif()
 
 target_link_libraries(DistRenderer dwSampleFramework)
 
 if(CLANG_FORMAT_EXE)
-    add_custom_target(DistRenderer-clang-format COMMAND ${CLANG_FORMAT_EXE} -i -style=file ${HYBRID_RENDERING_SOURCES} ${SHADER_SOURCES})
+    add_custom_target(DistRenderer-clang-format COMMAND ${CLANG_FORMAT_EXE} -i -style=file ${DIST_RENDERING_SOURCES} ${SHADER_SOURCES})
 endif()
 
 foreach(GLSL ${SHADER_SOURCES})
