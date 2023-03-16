@@ -212,9 +212,9 @@ protected:
         // Set custom settings here...
         dw::AppSettings settings;
 
-        settings.width       = 1920;
-        settings.height      = 1080;
-        settings.title       = "Dist Rendering (c) Dihara Wijetunga";
+        settings.width       = 720;
+        settings.height      = 480;
+        settings.title       = "Dist Rendering (Kirk)";
         settings.ray_tracing = true;
 
         return settings;

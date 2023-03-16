@@ -841,7 +841,7 @@ void RayTracedReflections::create_pipelines()
         m_ray_trace.pipeline = dw::vk::RayTracingPipeline::create(backend, desc);
     }
 
-    // Reset Args
+    // Reset Args  
     {
         dw::vk::PipelineLayout::Desc desc;
 
