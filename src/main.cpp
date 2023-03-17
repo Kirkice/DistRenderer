@@ -19,7 +19,7 @@
 #include "temporal_aa.h"
 #include "utilities.h"
 
-class DisteRenderer : public dw::Application
+class HybridRendering : public dw::Application
 {
 public:
     friend class GBuffer;
@@ -212,8 +212,8 @@ protected:
         // Set custom settings here...
         dw::AppSettings settings;
 
-        settings.width       = 720;
-        settings.height      = 480;
+        settings.width       = 1920;
+        settings.height      = 1080;
         settings.title       = "Dist Rendering (Kirk)";
         settings.ray_tracing = true;
 
@@ -265,7 +265,7 @@ private:
             ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
             ImGui::SetNextWindowSize(ImVec2(m_width * 0.3f, m_height));
 
-            if (ImGui::Begin("Dist Rendering", &open, window_flags))
+            if (ImGui::Begin("Hybrid Rendering", &open, window_flags))
             {
                 if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_DefaultOpen))
                 {
@@ -1052,15 +1052,7 @@ private:
             m_main_camera->update();
         }
         else if (m_camera_type == CAMERA_TYPE_FIXED)
-        {
-            if (m_side_to_side_motion)
-            {
-                m_main_camera->update_from_frame(constants::fixed_camera_position_vectors[m_common_resources->current_scene_type][m_current_fixed_camera_angle] + m_main_camera->m_right * sinf(static_cast<float>(m_side_to_side_motion_time)) * m_side_to_side_motion_distance, constants::fixed_camera_forward_vectors[m_common_resources->current_scene_type][m_current_fixed_camera_angle], constants::fixed_camera_right_vectors[m_common_resources->current_scene_type][m_current_fixed_camera_angle]);
-                m_side_to_side_motion_time += m_delta * 0.005f;
-            }
-            else 
-                m_main_camera->update_from_frame(constants::fixed_camera_position_vectors[m_common_resources->current_scene_type][m_current_fixed_camera_angle], constants::fixed_camera_forward_vectors[m_common_resources->current_scene_type][m_current_fixed_camera_angle], constants::fixed_camera_right_vectors[m_common_resources->current_scene_type][m_current_fixed_camera_angle]);
-        }
+            m_main_camera->update_from_frame(constants::fixed_camera_position_vectors[m_common_resources->current_scene_type][m_current_fixed_camera_angle], constants::fixed_camera_forward_vectors[m_common_resources->current_scene_type][m_current_fixed_camera_angle], constants::fixed_camera_right_vectors[m_common_resources->current_scene_type][m_current_fixed_camera_angle]);
         else
             m_common_resources->demo_players[m_common_resources->current_scene_type]->update(m_delta, m_main_camera.get());
 
@@ -1186,4 +1178,4 @@ private:
     UBO m_ubo_data;
 };
 
-DW_DECLARE_MAIN(DisteRenderer)
+DW_DECLARE_MAIN(HybridRendering)
