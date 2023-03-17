@@ -19,7 +19,7 @@
 #include "temporal_aa.h"
 #include "utilities.h"
 
-class HybridRendering : public dw::Application
+class DistRendering : public dw::Application
 {
 public:
     friend class GBuffer;
@@ -265,7 +265,7 @@ private:
             ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
             ImGui::SetNextWindowSize(ImVec2(m_width * 0.3f, m_height));
 
-            if (ImGui::Begin("Hybrid Rendering", &open, window_flags))
+            if (ImGui::Begin("Dist Rendering", &open, window_flags))
             {
                 if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_DefaultOpen))
                 {
@@ -1178,4 +1178,4 @@ private:
     UBO m_ubo_data;
 };
 
-DW_DECLARE_MAIN(HybridRendering)
+DW_DECLARE_MAIN(DistRendering)

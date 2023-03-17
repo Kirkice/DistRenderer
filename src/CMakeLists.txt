@@ -17,7 +17,7 @@ endif()
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
-set(HYBRID_RENDERING_SOURCES ${PROJECT_SOURCE_DIR}/src/main.cpp
+set(DIST_RENDERING_SOURCES ${PROJECT_SOURCE_DIR}/src/main.cpp
                              ${PROJECT_SOURCE_DIR}/src/ddgi.cpp
                              ${PROJECT_SOURCE_DIR}/src/ground_truth_path_tracer.cpp
                              ${PROJECT_SOURCE_DIR}/src/ray_traced_ao.cpp
@@ -93,18 +93,18 @@ set(SHADER_SOURCES ${PROJECT_SOURCE_DIR}/src/shaders/g_buffer.vert
                    ${PROJECT_SOURCE_DIR}/src/shaders/ground_truth/ground_truth_path_trace.rmiss)
 
 if(APPLE)
-    add_executable(HybridRendering MACOSX_BUNDLE ${HYBRID_RENDERING_SOURCES} ${SHADER_SOURCES} ${ASSET_SOURCES})
-    set(MACOSX_BUNDLE_BUNDLE_NAME "Hybrid Rendering") 
+    add_executable(DistRendering MACOSX_BUNDLE ${DIST_RENDERING_SOURCES} ${SHADER_SOURCES} ${ASSET_SOURCES})
+    set(MACOSX_BUNDLE_BUNDLE_NAME "Dist Rendering")
     set_source_files_properties(${SHADER_SOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources/shader)
     set_source_files_properties(${ASSET_SOURCES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 else()
-    add_executable(HybridRendering ${HYBRID_RENDERING_SOURCES} ${SHADER_SOURCES}) 
+    add_executable(DistRendering ${DIST_RENDERING_SOURCES} ${SHADER_SOURCES})
 endif()
 
-target_link_libraries(HybridRendering dwSampleFramework)
+target_link_libraries(DistRendering dwSampleFramework)
 
 if(CLANG_FORMAT_EXE)
-    add_custom_target(HybridRendering-clang-format COMMAND ${CLANG_FORMAT_EXE} -i -style=file ${HYBRID_RENDERING_SOURCES} ${SHADER_SOURCES})
+    add_custom_target(DistRendering-clang-format COMMAND ${CLANG_FORMAT_EXE} -i -style=file ${DIST_RENDERING_SOURCES} ${SHADER_SOURCES})
 endif()
 
 foreach(GLSL ${SHADER_SOURCES})
@@ -118,8 +118,8 @@ foreach(GLSL ${SHADER_SOURCES})
     list(APPEND SPIRV_BINARY_FILES ${SPIRV})
 endforeach(GLSL)
 
-add_custom_target(HybridRendering_Shaders DEPENDS ${SPIRV_BINARY_FILES})
+add_custom_target(DistRendering_Shaders DEPENDS ${SPIRV_BINARY_FILES})
 
-add_dependencies(HybridRendering HybridRendering_Shaders)
+add_dependencies(DistRendering DistRendering_Shaders)
 
-set_property(TARGET HybridRendering PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/$(Configuration)")
+set_property(TARGET DistRendering PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/$(Configuration)")
