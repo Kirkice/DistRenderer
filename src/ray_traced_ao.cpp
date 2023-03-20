@@ -4,7 +4,7 @@
 #include <profiler.h>
 #include <macros.h>
 #include <imgui.h>
-   
+
 // -----------------------------------------------------------------------------------------------------------------------------------
 
 static const int RAY_TRACE_NUM_THREADS_X = 8;

@@ -246,10 +246,108 @@ private:
 
     // -----------------------------------------------------------------------------------------------------------------------------------
 
+    void gui_style()
+    {
+        ImGuiStyle* style = &ImGui::GetStyle();
+        ImVec4* colors = style->Colors;
+
+        //	文字颜色
+        colors[ImGuiCol_Text] = ImVec4(0.89f, 0.89f, 0.89f, 1.000f);
+        //	文字不显示
+        colors[ImGuiCol_TextDisabled] = ImVec4(0.500f, 0.500f, 0.500f, 1.000f);
+        //	窗口背景色
+        colors[ImGuiCol_WindowBg] = ImVec4(0.1843f, 0.1882f, 0.2078f, 1.000f);
+        //	子窗口颜色
+        colors[ImGuiCol_ChildBg] = ImVec4(0.2431f, 0.2470f, 0.2745f, 0.000f);
+        //	弹出框
+        colors[ImGuiCol_PopupBg] = ImVec4(0.08f, 0.08f, 0.08f, 0.8f);
+        //	边界线
+        colors[ImGuiCol_Border] = ImVec4(0.1098f, 0.1137f, 0.1254f, 1.000f);
+        //	子结点分界框
+        colors[ImGuiCol_BorderShadow] = ImVec4(0.000f, 0.000f, 0.000f, 0.000f);
+
+        colors[ImGuiCol_FrameBg] = ImVec4(0.3137f, 0.3137f, 0.3456f, 1.000f);
+        colors[ImGuiCol_FrameBgHovered] = ImVec4(0.4431f, 0.4549f, 0.5019f, 1.000f);
+        colors[ImGuiCol_FrameBgActive] = ImVec4(0.4431f, 0.4549f, 0.5019f, 1.000f);
+
+        //	标题背景
+        colors[ImGuiCol_TitleBg] = ImVec4(0.1215f, 0.1176f, 0.1411f, 1.000f);
+        colors[ImGuiCol_TitleBgActive] = ImVec4(0.1215f, 0.1176f, 0.1411f, 1.000f);
+        colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.1215f, 0.1176f, 0.1411f, 1.000f);
+
+        //	主菜单
+        colors[ImGuiCol_MenuBarBg] = ImVec4(0.1607f, 0.1568f, 0.1803f, 1.000f);
+
+        //	滚动条
+        colors[ImGuiCol_ScrollbarBg] = ImVec4(0.1843f, 0.1882f, 0.2078f, 1.000f);
+        colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.2470f, 0.2470f, 0.2745f, 1.000f);
+        colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.2470f, 0.2470f, 0.2745f, 1.000f);
+        colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.8f, 0.1568f, 0.1803f, 1.000f);
+
+        //	复选框
+        colors[ImGuiCol_CheckMark] = ImVec4(1.000f, 1.000f, 1.000f, 1.000f);
+
+        //	滑动条
+        colors[ImGuiCol_SliderGrab] = ImVec4(0.3137f, 0.3137f, 0.3456f, 1.000f);
+        colors[ImGuiCol_SliderGrabActive] = ImVec4(0.8f, 0.1568f, 0.1803f, 1.000f);
+
+        //	按钮
+        colors[ImGuiCol_Button] = ImVec4(1.000f, 1.000f, 1.000f, 0.000f);
+        colors[ImGuiCol_ButtonHovered] = ImVec4(1.000f, 1.000f, 1.000f, 0.156f);
+        colors[ImGuiCol_ButtonActive] = ImVec4(1.000f, 1.000f, 1.000f, 0.391f);
+
+        //	标题
+        colors[ImGuiCol_Header] = ImVec4(0.1215f, 0.1176f, 0.1411f, 1.000f);
+        colors[ImGuiCol_HeaderHovered] = ImVec4(0.8f, 0.1568f, 0.1803f, 1.000f);
+        colors[ImGuiCol_HeaderActive] = ImVec4(0.8f, 0.1568f, 0.1803f, 1.000f);
+
+        //	分割线
+        colors[ImGuiCol_Separator] = colors[ImGuiCol_Border];
+        colors[ImGuiCol_SeparatorHovered] = ImVec4(0.0862f, 0.0901f, 0.1058f, 1.000f);
+        colors[ImGuiCol_SeparatorActive] = ImVec4(0.0862f, 0.0901f, 0.1058f, 1.000f);
+
+        //	调整大小
+        colors[ImGuiCol_ResizeGrip] = ImVec4(1.000f, 1.000f, 1.000f, 0.250f);
+        colors[ImGuiCol_ResizeGripHovered] = ImVec4(1.000f, 1.000f, 1.000f, 0.670f);
+        colors[ImGuiCol_ResizeGripActive] = ImVec4(1.000f, 0.391f, 0.000f, 1.000f);
+
+        //	Tap
+        colors[ImGuiCol_Tab] = ImVec4(0.1215f, 0.1176f, 0.1411f, 1.000f);
+        colors[ImGuiCol_TabHovered] = ImVec4(0.8f, 0.1568f, 0.1803f, 1.000f);
+        colors[ImGuiCol_TabActive] = ImVec4(0.1098f, 0.1137f, 0.1254f, 1.000f);
+        colors[ImGuiCol_TabUnfocused] = ImVec4(0.098f, 0.098f, 0.098f, 1.000f);
+        colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.195f, 0.195f, 0.195f, 1.000f);
+
+        //
+        colors[ImGuiCol_PlotLines] = ImVec4(0.469f, 0.469f, 0.469f, 1.000f);
+        colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.000f, 0.391f, 0.000f, 1.000f);
+        colors[ImGuiCol_PlotHistogram] = ImVec4(0.586f, 0.586f, 0.586f, 1.000f);
+        colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.000f, 0.391f, 0.000f, 1.000f);
+
+        //	文字选中
+        colors[ImGuiCol_TextSelectedBg] = ImVec4(1.000f, 1.000f, 1.000f, 0.156f);
+        colors[ImGuiCol_DragDropTarget] = ImVec4(1.000f, 0.391f, 0.000f, 1.000f);
+        colors[ImGuiCol_NavHighlight] = ImVec4(1.000f, 0.391f, 0.000f, 1.000f);
+        colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.000f, 0.391f, 0.000f, 1.000f);
+        colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.000f, 0.000f, 0.000f, 0.586f);
+        colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.000f, 0.000f, 0.000f, 0.586f);
+
+        style->ChildRounding = 4.0f;
+        style->FrameBorderSize = 1.0f;
+        style->FrameRounding = 3.0f;
+        style->GrabMinSize = 7.0f;
+        style->PopupRounding = 2.0f;
+        style->ScrollbarRounding = 12.0f;
+        style->ScrollbarSize = 13.0f;
+        style->TabBorderSize = 1.0f;
+        style->TabRounding = 0.0f;
+        style->WindowRounding = 0.0f;
+    }
+
     void debug_gui()
     {
         ImGuizmo::BeginFrame();
-
+        gui_style();
         if (m_debug_gui)
         {
             {
