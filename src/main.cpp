@@ -47,7 +47,7 @@ protected:
         //  TAA
         m_temporal_aa              = std::unique_ptr<TemporalAA>(new TemporalAA(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
         //  FxAA
-        m_fast_approximate_aa      = std::unique_ptr<FastApproximateAA>(new FastApproximateAA(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
+        m_fast_approximate_aa      = std::unique_ptr<FastApproximateAA>(new FastApproximateAA(m_vk_backend, m_common_resources.get()));
         //  色调映射
         m_tone_map                 = std::unique_ptr<ToneMap>(new ToneMap(m_vk_backend, m_common_resources.get()));
         //  创建相机
@@ -130,6 +130,18 @@ protected:
                                   m_ground_truth_path_tracer.get(),
                                   m_delta_seconds);
 
+            //  FxAA
+            m_fast_approximate_aa ->render(cmd_buf,
+                                           m_deferred_shading.get(),
+                                           m_ray_traced_ao.get(),
+                                           m_ray_traced_shadows.get(),
+                                           m_ray_traced_reflections.get(),
+                                           m_ddgi.get(),
+                                           m_ground_truth_path_tracer.get(),
+                                           [this](dw::vk::CommandBuffer::Ptr cmd_buf) {
+                                               render_gui(cmd_buf);
+                                           });
+
             //  绘制Tonemap
             m_tone_map->render(cmd_buf,
                                m_temporal_aa.get(),
@@ -142,6 +154,7 @@ protected:
                                [this](dw::vk::CommandBuffer::Ptr cmd_buf) {
                                    render_gui(cmd_buf);
                                });
+            //
         }
 
         //  VK 结束cmd
@@ -163,6 +176,7 @@ protected:
 
     void shutdown() override
     {
+        m_fast_approximate_aa.reset();
         m_tone_map.reset();
         m_temporal_aa.reset();
         m_deferred_shading.reset();
@@ -251,8 +265,8 @@ protected:
         // Set custom settings here...
         dw::AppSettings settings;
 
-        settings.width       = 1280;
-        settings.height      = 720;
+        settings.width       = 720;
+        settings.height      = 405;
         settings.title       = "DistRendering-Vulkan (Writer:Kirk)";
         settings.ray_tracing = true;
 
@@ -804,6 +818,11 @@ private:
                         m_temporal_aa->gui();
                         ImGui::TreePop();
                     }
+                    if(ImGui::TreeNode("FxAA"))
+                    {
+                        m_fast_approximate_aa->gui();
+                        ImGui::TreePop();
+                    }
                 }
                 if (ImGui::CollapsingHeader("Profiler", ImGuiTreeNodeFlags_DefaultOpen))
                     dw::profiler::ui();
@@ -1275,8 +1294,8 @@ private:
     std::unique_ptr<DDGI>                  m_ddgi;
     std::unique_ptr<GroundTruthPathTracer> m_ground_truth_path_tracer;
     std::unique_ptr<TemporalAA>            m_temporal_aa;
-    std::unique_ptr<FastApproximateAA>     m_fast_approximate_aa;
     std::unique_ptr<ToneMap>               m_tone_map;
+    std::unique_ptr<FastApproximateAA>     m_fast_approximate_aa;
 
     // Camera.
     CameraType                  m_camera_type                = CAMERA_TYPE_FREE;

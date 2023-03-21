@@ -28,6 +28,7 @@ public:
                 GroundTruthPathTracer*                          ground_truth_path_tracer,
                 std::function<void(dw::vk::CommandBuffer::Ptr)> gui_callback);
     void gui();
+    inline bool      enabled() { return m_enabled; }
 
 private:
     void create_pipeline();
@@ -38,6 +39,7 @@ private:
     uint32_t                       m_width;
     uint32_t                       m_height;
 
+    bool                           m_enabled                       = true;
     float                          m_absolute_luma_threshold       = 0.08f;
     float                          m_relative_luma_threshold       = 0.25f;
     float                          m_console_charpness             = 4.0f;

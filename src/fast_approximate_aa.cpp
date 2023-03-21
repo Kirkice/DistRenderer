@@ -17,7 +17,7 @@ struct FastApproximateAAConstant
     float AbsoluteLumaThreshold;
     float RelativeLumaThreshold;
     float ConsoleCharpness;
-    bool DebugMode;
+    float DebugMode;
 };
 
 // -----------------------------------------------------------------------------------------------------------------------------------
@@ -50,6 +50,9 @@ void FastApproximateAA::render(dw::vk::CommandBuffer::Ptr            cmd_buf,
                      GroundTruthPathTracer*                          ground_truth_path_tracer,
                      std::function<void(dw::vk::CommandBuffer::Ptr)> gui_callback)
 {
+    if(m_enabled == false)
+        return;
+
     DW_SCOPED_SAMPLE("Tone Map", cmd_buf);
 
     auto vk_backend = m_backend.lock();
@@ -121,9 +124,9 @@ void FastApproximateAA::render(dw::vk::CommandBuffer::Ptr            cmd_buf,
     FastApproximateAAConstant push_constants;
 
     push_constants.AbsoluteLumaThreshold = m_absolute_luma_threshold;
-    push_constants.ConsoleCharpness       = m_console_charpness;
+    push_constants.ConsoleCharpness = m_console_charpness;
     push_constants.RelativeLumaThreshold = m_relative_luma_threshold;
-    push_constants.DebugMode = m_debug_mode;
+    push_constants.DebugMode = (int) m_debug_mode;
 
     vkCmdPushConstants(cmd_buf->handle(), m_pipeline_layout->handle(), VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(FastApproximateAAConstant), &push_constants);
 
@@ -141,10 +144,13 @@ void FastApproximateAA::render(dw::vk::CommandBuffer::Ptr            cmd_buf,
 
 void FastApproximateAA::gui()
 {
+    ImGui::PushID("GUI_FXAA");
+    ImGui::Checkbox("Enabled", &m_enabled);
     ImGui::InputFloat("AbsoluteLumaThreshold", &m_absolute_luma_threshold);
     ImGui::InputFloat("RelativeLumaThreshold", &m_relative_luma_threshold);
     ImGui::InputFloat("ConsoleCharpness", &m_console_charpness);
     ImGui::Checkbox("Debug Mode", &m_debug_mode);
+    ImGui::PopID();
 }
 
 // -----------------------------------------------------------------------------------------------------------------------------------
