@@ -180,7 +180,7 @@ struct UBO
 
 struct CommonResources
 {
-    SceneType                                    current_scene_type         = SCENE_TYPE_SHADOWS_TEST;
+    SceneType                                    current_scene_type         = SCENE_TYPE_GLOBAL_ILLUMINATION_TEST;
     VisualizationType                            current_visualization_type = VISUALIZATION_TYPE_FINAL;
     EnvironmentType                              current_environment_type   = ENVIRONMENT_TYPE_PROCEDURAL_SKY;
     bool                                         first_frame                = true;

@@ -265,8 +265,8 @@ protected:
         // Set custom settings here...
         dw::AppSettings settings;
 
-        settings.width       = 720;
-        settings.height      = 405;
+        settings.width       = 1280;
+        settings.height      = 720;
         settings.title       = "DistRendering-Vulkan (Writer:Kirk)";
         settings.ray_tracing = true;
 
@@ -414,7 +414,7 @@ private:
             ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_HorizontalScrollbar;
 
             ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
-            ImGui::SetNextWindowSize(ImVec2(m_width * 0.3f, m_height));
+            ImGui::SetNextWindowSize(ImVec2(m_width * 0.2f, m_height));
 
             if (ImGui::Begin("Dist Rendering", &open, window_flags))
             {

@@ -38,7 +38,7 @@ u_PushConstants;
 //究极抗锯齿
 #define FXAA_MAX_EAGE_SEARCH_SAMPLE_COUNT 12
 
-#define ScreenParams vec4(720, 405, 1.000521, 1.000926)
+#define ScreenParams vec4(1280, 720, 1.000521, 1.000926)
 
 float edgeSearchSteps[FXAA_MAX_EAGE_SEARCH_SAMPLE_COUNT] = {
     1, 1, 1, 1, 1,
