@@ -16,6 +16,7 @@
 #include "ddgi.h"
 #include "ground_truth_path_tracer.h"
 #include "tone_map.h"
+#include "fast_approximate_aa.h"
 #include "temporal_aa.h"
 #include "utilities.h"
 
@@ -27,18 +28,31 @@ public:
 protected:
     bool init(int argc, const char* argv[]) override
     {
+        //  普通纹理
         m_common_resources         = std::unique_ptr<CommonResources>(new CommonResources(m_vk_backend));
+        //  GBuffer
         m_g_buffer                 = std::unique_ptr<GBuffer>(new GBuffer(m_vk_backend, m_common_resources.get(), m_width, m_height));
+        //  光线追踪阴影
         m_ray_traced_shadows       = std::unique_ptr<RayTracedShadows>(new RayTracedShadows(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
+        //  光线追踪AO
         m_ray_traced_ao            = std::unique_ptr<RayTracedAO>(new RayTracedAO(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
+        //  光线追踪反射
         m_ray_traced_reflections   = std::unique_ptr<RayTracedReflections>(new RayTracedReflections(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
+        //  DDGI
         m_ddgi                     = std::unique_ptr<DDGI>(new DDGI(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
+        //  GT路径追踪
         m_ground_truth_path_tracer = std::unique_ptr<GroundTruthPathTracer>(new GroundTruthPathTracer(m_vk_backend, m_common_resources.get()));
+        //  延迟渲染
         m_deferred_shading         = std::unique_ptr<DeferredShading>(new DeferredShading(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
+        //  TAA
         m_temporal_aa              = std::unique_ptr<TemporalAA>(new TemporalAA(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
+        //  FxAA
+        m_fast_approximate_aa      = std::unique_ptr<FastApproximateAA>(new FastApproximateAA(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
+        //  色调映射
         m_tone_map                 = std::unique_ptr<ToneMap>(new ToneMap(m_vk_backend, m_common_resources.get()));
-
+        //  创建相机
         create_camera();
+        //  设置激活的场景
         set_active_scene();
 
         return true;
@@ -48,45 +62,65 @@ protected:
 
     void update(double delta) override
     {
+        //  获取到command buffer
         dw::vk::CommandBuffer::Ptr cmd_buf = m_vk_backend->allocate_graphics_command_buffer();
 
+        //  VK CommandBuffer开始信息
         VkCommandBufferBeginInfo begin_info;
         DW_ZERO_MEMORY(begin_info);
-
+        //  设置info类型为 VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO
         begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
+        //  VK 启动cmd
         vkBeginCommandBuffer(cmd_buf->handle(), &begin_info);
 
         {
             DW_SCOPED_SAMPLE("Update", cmd_buf);
 
+            //  绘制GUI
             debug_gui();
 
-            // Update camera.
+            // 更新相机
             update_camera();
 
-            // Update light.
+            // 更新灯光
             update_light_animation();
 
-            // Update uniforms.
+            // 更新Uniform
             update_uniforms(cmd_buf);
 
+            //  构建场景TLAS加速结构
             m_common_resources->current_scene()->build_tlas(cmd_buf);
 
+            //  更新IBL
             update_ibl(cmd_buf);
 
-            // Render.
+            // 绘制GBuffer
             m_g_buffer->render(cmd_buf);
+
+            //  绘制光线追踪阴影
             m_ray_traced_shadows->render(cmd_buf);
+
+            //  绘制光线追踪AO
             m_ray_traced_ao->render(cmd_buf);
+
+            //  绘制DDGI
             m_ddgi->render(cmd_buf);
+
+            //  绘制光线追踪反射
             m_ray_traced_reflections->render(cmd_buf, m_ddgi.get());
+
+            //  绘制延迟渲染
             m_deferred_shading->render(cmd_buf,
                                        m_ray_traced_ao.get(),
                                        m_ray_traced_shadows.get(),
                                        m_ray_traced_reflections.get(),
                                        m_ddgi.get());
+
+            //  绘制GT路径追踪
             m_ground_truth_path_tracer->render(cmd_buf);
+
+            //  绘制TAA
             m_temporal_aa->render(cmd_buf,
                                   m_deferred_shading.get(),
                                   m_ray_traced_ao.get(),
@@ -95,6 +129,8 @@ protected:
                                   m_ddgi.get(),
                                   m_ground_truth_path_tracer.get(),
                                   m_delta_seconds);
+
+            //  绘制Tonemap
             m_tone_map->render(cmd_buf,
                                m_temporal_aa.get(),
                                m_deferred_shading.get(),
@@ -108,10 +144,13 @@ protected:
                                });
         }
 
+        //  VK 结束cmd
         vkEndCommandBuffer(cmd_buf->handle());
 
+        //  提交cmd和呈现
         submit_and_present({ cmd_buf });
 
+        //  frame++
         m_common_resources->num_frames++;
 
         if (m_common_resources->first_frame)
@@ -1236,6 +1275,7 @@ private:
     std::unique_ptr<DDGI>                  m_ddgi;
     std::unique_ptr<GroundTruthPathTracer> m_ground_truth_path_tracer;
     std::unique_ptr<TemporalAA>            m_temporal_aa;
+    std::unique_ptr<FastApproximateAA>     m_fast_approximate_aa;
     std::unique_ptr<ToneMap>               m_tone_map;
 
     // Camera.

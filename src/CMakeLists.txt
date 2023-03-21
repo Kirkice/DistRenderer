@@ -27,6 +27,7 @@ set(DIST_RENDERING_SOURCES ${PROJECT_SOURCE_DIR}/src/main.cpp
                              ${PROJECT_SOURCE_DIR}/src/deferred_shading.cpp
                              ${PROJECT_SOURCE_DIR}/src/temporal_aa.cpp
                              ${PROJECT_SOURCE_DIR}/src/tone_map.cpp
+                             ${PROJECT_SOURCE_DIR}/src/fast_approximate_aa.cpp
                              ${PROJECT_SOURCE_DIR}/src/utilities.cpp
                              ${PROJECT_SOURCE_DIR}/src/blue_noise.cpp
                              ${PROJECT_SOURCE_DIR}/src/common.cpp
@@ -40,6 +41,7 @@ set(DIST_RENDERING_SOURCES ${PROJECT_SOURCE_DIR}/src/main.cpp
                              ${PROJECT_SOURCE_DIR}/src/deferred_shading.h
                              ${PROJECT_SOURCE_DIR}/src/temporal_aa.h
                              ${PROJECT_SOURCE_DIR}/src/tone_map.h
+                             ${PROJECT_SOURCE_DIR}/src/fast_approximate_aa.h
                              ${PROJECT_SOURCE_DIR}/src/utilities.h
                              ${PROJECT_SOURCE_DIR}/src/blue_noise.h
                              ${PROJECT_SOURCE_DIR}/external/dwSampleFramework/extras/brdf_preintegrate_lut.cpp
@@ -56,6 +58,7 @@ set(SHADER_SOURCES ${PROJECT_SOURCE_DIR}/src/shaders/g_buffer.vert
                    ${PROJECT_SOURCE_DIR}/src/shaders/deferred.frag
                    ${PROJECT_SOURCE_DIR}/src/shaders/triangle.vert
                    ${PROJECT_SOURCE_DIR}/src/shaders/tone_map.frag
+                   ${PROJECT_SOURCE_DIR}/src/shaders/fast_approximate_aa.frag
                    ${PROJECT_SOURCE_DIR}/src/shaders/skybox.vert
                    ${PROJECT_SOURCE_DIR}/src/shaders/skybox.frag
                    ${PROJECT_SOURCE_DIR}/src/shaders/taa.comp
