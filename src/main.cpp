@@ -5,7 +5,9 @@
 #include <equirectangular_to_cubemap.h>
 #include <ImGuizmo.h>
 #include <math.h>
+
 #define GLM_ENABLE_EXPERIMENTAL
+
 #include <gtx/matrix_decompose.hpp>
 #include <gtc/quaternion.hpp>
 #include "g_buffer.h"
@@ -20,36 +22,41 @@
 #include "temporal_aa.h"
 #include "utilities.h"
 
-class DistRendering : public dw::Application
-{
+class DistRendering : public dw::Application {
 public:
     friend class GBuffer;
 
 protected:
-    bool init(int argc, const char* argv[]) override
-    {
+    bool init(int argc, const char *argv[]) override {
         //  普通纹理
-        m_common_resources         = std::unique_ptr<CommonResources>(new CommonResources(m_vk_backend));
+        m_common_resources = std::unique_ptr<CommonResources>(new CommonResources(m_vk_backend));
         //  GBuffer
-        m_g_buffer                 = std::unique_ptr<GBuffer>(new GBuffer(m_vk_backend, m_common_resources.get(), m_width, m_height));
+        m_g_buffer = std::unique_ptr<GBuffer>(new GBuffer(m_vk_backend, m_common_resources.get(), m_width, m_height));
         //  光线追踪阴影
-        m_ray_traced_shadows       = std::unique_ptr<RayTracedShadows>(new RayTracedShadows(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
+        m_ray_traced_shadows = std::unique_ptr<RayTracedShadows>(
+                new RayTracedShadows(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
         //  光线追踪AO
-        m_ray_traced_ao            = std::unique_ptr<RayTracedAO>(new RayTracedAO(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
+        m_ray_traced_ao = std::unique_ptr<RayTracedAO>(
+                new RayTracedAO(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
         //  光线追踪反射
-        m_ray_traced_reflections   = std::unique_ptr<RayTracedReflections>(new RayTracedReflections(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
+        m_ray_traced_reflections = std::unique_ptr<RayTracedReflections>(
+                new RayTracedReflections(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
         //  DDGI
-        m_ddgi                     = std::unique_ptr<DDGI>(new DDGI(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
+        m_ddgi = std::unique_ptr<DDGI>(new DDGI(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
         //  GT路径追踪
-        m_ground_truth_path_tracer = std::unique_ptr<GroundTruthPathTracer>(new GroundTruthPathTracer(m_vk_backend, m_common_resources.get()));
+        m_ground_truth_path_tracer = std::unique_ptr<GroundTruthPathTracer>(
+                new GroundTruthPathTracer(m_vk_backend, m_common_resources.get()));
         //  延迟渲染
-        m_deferred_shading         = std::unique_ptr<DeferredShading>(new DeferredShading(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
+        m_deferred_shading = std::unique_ptr<DeferredShading>(
+                new DeferredShading(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
         //  TAA
-        m_temporal_aa              = std::unique_ptr<TemporalAA>(new TemporalAA(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
+        m_temporal_aa = std::unique_ptr<TemporalAA>(
+                new TemporalAA(m_vk_backend, m_common_resources.get(), m_g_buffer.get()));
         //  FxAA
-        m_fast_approximate_aa      = std::unique_ptr<FastApproximateAA>(new FastApproximateAA(m_vk_backend, m_common_resources.get()));
+        m_fast_approximate_aa = std::unique_ptr<FastApproximateAA>(
+                new FastApproximateAA(m_vk_backend, m_common_resources.get()));
         //  色调映射
-        m_tone_map                 = std::unique_ptr<ToneMap>(new ToneMap(m_vk_backend, m_common_resources.get()));
+        m_tone_map = std::unique_ptr<ToneMap>(new ToneMap(m_vk_backend, m_common_resources.get()));
         //  创建相机
         create_camera();
         //  设置激活的场景
@@ -60,8 +67,7 @@ protected:
 
     // -----------------------------------------------------------------------------------------------------------------------------------
 
-    void update(double delta) override
-    {
+    void update(double delta) override {
         //  获取到command buffer
         dw::vk::CommandBuffer::Ptr cmd_buf = m_vk_backend->allocate_graphics_command_buffer();
 
@@ -130,18 +136,6 @@ protected:
                                   m_ground_truth_path_tracer.get(),
                                   m_delta_seconds);
 
-            //  FxAA
-            m_fast_approximate_aa ->render(cmd_buf,
-                                           m_deferred_shading.get(),
-                                           m_ray_traced_ao.get(),
-                                           m_ray_traced_shadows.get(),
-                                           m_ray_traced_reflections.get(),
-                                           m_ddgi.get(),
-                                           m_ground_truth_path_tracer.get(),
-                                           [this](dw::vk::CommandBuffer::Ptr cmd_buf) {
-                                               render_gui(cmd_buf);
-                                           });
-
             //  绘制Tonemap
             m_tone_map->render(cmd_buf,
                                m_temporal_aa.get(),
@@ -154,14 +148,24 @@ protected:
                                [this](dw::vk::CommandBuffer::Ptr cmd_buf) {
                                    render_gui(cmd_buf);
                                });
-            //
+            //  FxAA
+            m_fast_approximate_aa->render(cmd_buf,
+                                          m_deferred_shading.get(),
+                                          m_ray_traced_ao.get(),
+                                          m_ray_traced_shadows.get(),
+                                          m_ray_traced_reflections.get(),
+                                          m_ddgi.get(),
+                                          m_ground_truth_path_tracer.get(),
+                                          [this](dw::vk::CommandBuffer::Ptr cmd_buf) {
+                                              render_gui(cmd_buf);
+                                          });
         }
 
         //  VK 结束cmd
         vkEndCommandBuffer(cmd_buf->handle());
 
         //  提交cmd和呈现
-        submit_and_present({ cmd_buf });
+        submit_and_present({cmd_buf});
 
         //  frame++
         m_common_resources->num_frames++;
@@ -174,8 +178,7 @@ protected:
 
     // -----------------------------------------------------------------------------------------------------------------------------------
 
-    void shutdown() override
-    {
+    void shutdown() override {
         m_fast_approximate_aa.reset();
         m_tone_map.reset();
         m_temporal_aa.reset();
@@ -191,10 +194,8 @@ protected:
 
     // -----------------------------------------------------------------------------------------------------------------------------------
 
-    void key_pressed(int code) override
-    {
-        if (m_camera_type == CAMERA_TYPE_FREE)
-        {
+    void key_pressed(int code) override {
+        if (m_camera_type == CAMERA_TYPE_FREE) {
             // Handle forward movement.
             if (code == GLFW_KEY_W)
                 m_heading_speed = m_camera_speed * CAMERA_SPEED_MULTIPLIER;
@@ -217,10 +218,8 @@ protected:
 
     // -----------------------------------------------------------------------------------------------------------------------------------
 
-    void key_released(int code) override
-    {
-        if (m_camera_type == CAMERA_TYPE_FREE)
-        {
+    void key_released(int code) override {
+        if (m_camera_type == CAMERA_TYPE_FREE) {
             // Handle forward movement.
             if (code == GLFW_KEY_W || code == GLFW_KEY_S)
                 m_heading_speed = 0.0f;
@@ -236,10 +235,8 @@ protected:
 
     // -----------------------------------------------------------------------------------------------------------------------------------
 
-    void mouse_pressed(int code) override
-    {
-        if (m_camera_type == CAMERA_TYPE_FREE)
-        {
+    void mouse_pressed(int code) override {
+        if (m_camera_type == CAMERA_TYPE_FREE) {
             // Enable mouse look.
             if (code == GLFW_MOUSE_BUTTON_RIGHT)
                 m_mouse_look = true;
@@ -248,10 +245,8 @@ protected:
 
     // -----------------------------------------------------------------------------------------------------------------------------------
 
-    void mouse_released(int code) override
-    {
-        if (m_camera_type == CAMERA_TYPE_FREE)
-        {
+    void mouse_released(int code) override {
+        if (m_camera_type == CAMERA_TYPE_FREE) {
             // Disable mouse look.
             if (code == GLFW_MOUSE_BUTTON_RIGHT)
                 m_mouse_look = false;
@@ -260,14 +255,13 @@ protected:
 
     // -----------------------------------------------------------------------------------------------------------------------------------
 
-    dw::AppSettings intial_app_settings() override
-    {
+    dw::AppSettings intial_app_settings() override {
         // Set custom settings here...
         dw::AppSettings settings;
 
-        settings.width       = 1280;
-        settings.height      = 720;
-        settings.title       = "DistRendering-Vulkan (Writer:Kirk)";
+        settings.width = 1280;
+        settings.height = 720;
+        settings.title = "DistRendering-Vulkan (Writer:Kirk)";
         settings.ray_tracing = true;
 
         return settings;
@@ -275,8 +269,7 @@ protected:
 
     // -----------------------------------------------------------------------------------------------------------------------------------
 
-    void window_resized(int width, int height) override
-    {
+    void window_resized(int width, int height) override {
         // Override window resized method to update camera projection.
         m_main_camera->update_projection(60.0f, CAMERA_NEAR_PLANE, CAMERA_FAR_PLANE, float(m_width) / float(m_height));
 
@@ -288,21 +281,22 @@ protected:
 private:
     // -----------------------------------------------------------------------------------------------------------------------------------
 
-    void create_camera()
-    {
-        m_main_camera                     = std::make_unique<dw::Camera>(60.0f, CAMERA_NEAR_PLANE, CAMERA_FAR_PLANE, float(m_width) / float(m_height), glm::vec3(0.0f, 35.0f, 125.0f), glm::vec3(0.0f, 0.0, -1.0f));
+    void create_camera() {
+        m_main_camera = std::make_unique<dw::Camera>(60.0f, CAMERA_NEAR_PLANE, CAMERA_FAR_PLANE,
+                                                     float(m_width) / float(m_height), glm::vec3(0.0f, 35.0f, 125.0f),
+                                                     glm::vec3(0.0f, 0.0, -1.0f));
         m_common_resources->prev_position = m_main_camera->m_position;
 
-        float z_buffer_params_x             = -1.0 + (CAMERA_NEAR_PLANE / CAMERA_FAR_PLANE);
-        m_common_resources->z_buffer_params = glm::vec4(z_buffer_params_x, 1.0f, z_buffer_params_x / CAMERA_NEAR_PLANE, 1.0f / CAMERA_NEAR_PLANE);
+        float z_buffer_params_x = -1.0 + (CAMERA_NEAR_PLANE / CAMERA_FAR_PLANE);
+        m_common_resources->z_buffer_params = glm::vec4(z_buffer_params_x, 1.0f, z_buffer_params_x / CAMERA_NEAR_PLANE,
+                                                        1.0f / CAMERA_NEAR_PLANE);
     }
 
     // -----------------------------------------------------------------------------------------------------------------------------------
 
-    void gui_style()
-    {
-        ImGuiStyle* style = &ImGui::GetStyle();
-        ImVec4* colors = style->Colors;
+    void gui_style() {
+        ImGuiStyle *style = &ImGui::GetStyle();
+        ImVec4 *colors = style->Colors;
 
         //	文字颜色
         colors[ImGuiCol_Text] = ImVec4(0.89f, 0.89f, 0.89f, 1.000f);
@@ -397,40 +391,37 @@ private:
         style->WindowRounding = 0.0f;
     }
 
-    void debug_gui()
-    {
+    void debug_gui() {
         ImGuizmo::BeginFrame();
         gui_style();
-        if (m_debug_gui)
-        {
+        if (m_debug_gui) {
             {
                 ImGuizmo::SetOrthographic(false);
                 ImGuizmo::SetRect(0, 0, m_width, m_height);
-                if (ImGuizmo::Manipulate(&m_main_camera->m_view[0][0], &m_main_camera->m_projection[0][0], m_light_transform_operation, ImGuizmo::WORLD, &m_light_transform[0][0], NULL, NULL))
+                if (ImGuizmo::Manipulate(&m_main_camera->m_view[0][0], &m_main_camera->m_projection[0][0],
+                                         m_light_transform_operation, ImGuizmo::WORLD, &m_light_transform[0][0], NULL,
+                                         NULL))
                     m_ground_truth_path_tracer->restart_accumulation();
             }
 
-            bool             open         = true;
-            ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_HorizontalScrollbar;
+            bool open = true;
+            ImGuiWindowFlags window_flags =
+                    ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+                    ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_HorizontalScrollbar;
 
             ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
             ImGui::SetNextWindowSize(ImVec2(m_width * 0.2f, m_height));
 
-            if (ImGui::Begin("Dist Rendering", &open, window_flags))
-            {
-                if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_DefaultOpen))
-                {
-                    if (ImGui::TreeNode("General"))
-                    {
-                        if (ImGui::BeginCombo("Scene", constants::scene_types[m_common_resources->current_scene_type].c_str()))
-                        {
-                            for (uint32_t i = 0; i < constants::scene_types.size(); i++)
-                            {
+            if (ImGui::Begin("Dist Rendering", &open, window_flags)) {
+                if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+                    if (ImGui::TreeNode("General")) {
+                        if (ImGui::BeginCombo("Scene",
+                                              constants::scene_types[m_common_resources->current_scene_type].c_str())) {
+                            for (uint32_t i = 0; i < constants::scene_types.size(); i++) {
                                 const bool is_selected = (i == m_common_resources->current_scene_type);
 
-                                if (ImGui::Selectable(constants::scene_types[i].c_str(), is_selected))
-                                {
-                                    m_common_resources->current_scene_type = (SceneType)i;
+                                if (ImGui::Selectable(constants::scene_types[i].c_str(), is_selected)) {
+                                    m_common_resources->current_scene_type = (SceneType) i;
                                     set_active_scene();
                                 }
 
@@ -440,19 +431,17 @@ private:
                             ImGui::EndCombo();
                         }
 
-                        if (ImGui::BeginCombo("Environment", constants::environment_types[m_common_resources->current_environment_type].c_str()))
-                        {
-                            for (uint32_t i = 0; i < constants::environment_types.size(); i++)
-                            {
+                        if (ImGui::BeginCombo("Environment",
+                                              constants::environment_types[m_common_resources->current_environment_type].c_str())) {
+                            for (uint32_t i = 0; i < constants::environment_types.size(); i++) {
                                 const bool is_selected = (i == m_common_resources->current_environment_type);
 
                                 if (i == ENVIRONMENT_TYPE_PROCEDURAL_SKY && m_light_type != LIGHT_TYPE_DIRECTIONAL)
                                     continue;
 
-                                if (ImGui::Selectable(constants::environment_types[i].c_str(), is_selected))
-                                {
-                                    m_common_resources->current_environment_type = (EnvironmentType)i;
-                                    m_common_resources->current_skybox_ds        = m_common_resources->skybox_ds[m_common_resources->current_environment_type];
+                                if (ImGui::Selectable(constants::environment_types[i].c_str(), is_selected)) {
+                                    m_common_resources->current_environment_type = (EnvironmentType) i;
+                                    m_common_resources->current_skybox_ds = m_common_resources->skybox_ds[m_common_resources->current_environment_type];
                                     m_ground_truth_path_tracer->restart_accumulation();
                                 }
 
@@ -462,14 +451,13 @@ private:
                             ImGui::EndCombo();
                         }
 
-                        if (ImGui::BeginCombo("Visualization", constants::visualization_types[m_common_resources->current_visualization_type].c_str()))
-                        {
-                            for (uint32_t i = 0; i < constants::visualization_types.size(); i++)
-                            {
+                        if (ImGui::BeginCombo("Visualization",
+                                              constants::visualization_types[m_common_resources->current_visualization_type].c_str())) {
+                            for (uint32_t i = 0; i < constants::visualization_types.size(); i++) {
                                 const bool is_selected = (i == m_common_resources->current_visualization_type);
 
                                 if (ImGui::Selectable(constants::visualization_types[i].c_str(), is_selected))
-                                    m_common_resources->current_visualization_type = (VisualizationType)i;
+                                    m_common_resources->current_visualization_type = (VisualizationType) i;
 
                                 if (is_selected)
                                     ImGui::SetItemDefaultFocus();
@@ -477,18 +465,16 @@ private:
                             ImGui::EndCombo();
                         }
 
-                        if (m_common_resources->current_visualization_type == VISUALIZATION_TYPE_REFLECTIONS)
-                        {
+                        if (m_common_resources->current_visualization_type == VISUALIZATION_TYPE_REFLECTIONS) {
                             RayTracedReflections::OutputType type = m_ray_traced_reflections->current_output();
 
-                            if (ImGui::BeginCombo("Buffers", RayTracedReflections::kOutputTypeNames[type].c_str()))
-                            {
-                                for (uint32_t i = 0; i < RayTracedReflections::kNumOutputTypes; i++)
-                                {
+                            if (ImGui::BeginCombo("Buffers", RayTracedReflections::kOutputTypeNames[type].c_str())) {
+                                for (uint32_t i = 0; i < RayTracedReflections::kNumOutputTypes; i++) {
                                     const bool is_selected = (i == type);
 
-                                    if (ImGui::Selectable(RayTracedReflections::kOutputTypeNames[i].c_str(), is_selected))
-                                        type = (RayTracedReflections::OutputType)i;
+                                    if (ImGui::Selectable(RayTracedReflections::kOutputTypeNames[i].c_str(),
+                                                          is_selected))
+                                        type = (RayTracedReflections::OutputType) i;
 
                                     if (is_selected)
                                         ImGui::SetItemDefaultFocus();
@@ -497,19 +483,15 @@ private:
                             }
 
                             m_ray_traced_reflections->set_current_output(type);
-                        }
-                        else if (m_common_resources->current_visualization_type == VISUALIZATION_TYPE_SHADOWS)
-                        {
+                        } else if (m_common_resources->current_visualization_type == VISUALIZATION_TYPE_SHADOWS) {
                             RayTracedShadows::OutputType type = m_ray_traced_shadows->current_output();
 
-                            if (ImGui::BeginCombo("Buffers", RayTracedShadows::kOutputTypeNames[type].c_str()))
-                            {
-                                for (uint32_t i = 0; i < RayTracedShadows::kNumOutputTypes; i++)
-                                {
+                            if (ImGui::BeginCombo("Buffers", RayTracedShadows::kOutputTypeNames[type].c_str())) {
+                                for (uint32_t i = 0; i < RayTracedShadows::kNumOutputTypes; i++) {
                                     const bool is_selected = (i == type);
 
                                     if (ImGui::Selectable(RayTracedShadows::kOutputTypeNames[i].c_str(), is_selected))
-                                        type = (RayTracedShadows::OutputType)i;
+                                        type = (RayTracedShadows::OutputType) i;
 
                                     if (is_selected)
                                         ImGui::SetItemDefaultFocus();
@@ -518,19 +500,16 @@ private:
                             }
 
                             m_ray_traced_shadows->set_current_output(type);
-                        }
-                        else if (m_common_resources->current_visualization_type == VISUALIZATION_TYPE_AMBIENT_OCCLUSION)
-                        {
+                        } else if (m_common_resources->current_visualization_type ==
+                                   VISUALIZATION_TYPE_AMBIENT_OCCLUSION) {
                             RayTracedAO::OutputType type = m_ray_traced_ao->current_output();
 
-                            if (ImGui::BeginCombo("Buffers", RayTracedAO::kOutputTypeNames[type].c_str()))
-                            {
-                                for (uint32_t i = 0; i < RayTracedAO::kNumOutputTypes; i++)
-                                {
+                            if (ImGui::BeginCombo("Buffers", RayTracedAO::kOutputTypeNames[type].c_str())) {
+                                for (uint32_t i = 0; i < RayTracedAO::kNumOutputTypes; i++) {
                                     const bool is_selected = (i == type);
 
                                     if (ImGui::Selectable(RayTracedAO::kOutputTypeNames[i].c_str(), is_selected))
-                                        type = (RayTracedAO::OutputType)i;
+                                        type = (RayTracedAO::OutputType) i;
 
                                     if (is_selected)
                                         ImGui::SetItemDefaultFocus();
@@ -539,29 +518,26 @@ private:
                             }
 
                             m_ray_traced_ao->set_current_output(type);
-                        }
-                        else if (m_common_resources->current_visualization_type == VISUALIZATION_TYPE_GROUND_TRUTH)
+                        } else if (m_common_resources->current_visualization_type == VISUALIZATION_TYPE_GROUND_TRUTH)
                             m_ground_truth_path_tracer->gui();
 
-                        ImGui::SliderFloat("Roughness Multiplier", &m_common_resources->roughness_multiplier, 0.0f, 1.0f);
+                        ImGui::SliderFloat("Roughness Multiplier", &m_common_resources->roughness_multiplier, 0.0f,
+                                           1.0f);
 
                         m_tone_map->gui();
 
                         ImGui::TreePop();
                         ImGui::Separator();
                     }
-                    if (ImGui::TreeNode("Light"))
-                    {
+                    if (ImGui::TreeNode("Light")) {
                         LightType type = m_light_type;
 
-                        if (ImGui::BeginCombo("Type", constants::light_types[type].c_str()))
-                        {
-                            for (uint32_t i = 0; i < constants::light_types.size(); i++)
-                            {
+                        if (ImGui::BeginCombo("Type", constants::light_types[type].c_str())) {
+                            for (uint32_t i = 0; i < constants::light_types.size(); i++) {
                                 const bool is_selected = (i == type);
 
                                 if (ImGui::Selectable(constants::light_types[i].c_str(), is_selected))
-                                    type = (LightType)i;
+                                    type = (LightType) i;
 
                                 if (is_selected)
                                     ImGui::SetItemDefaultFocus();
@@ -569,8 +545,7 @@ private:
                             ImGui::EndCombo();
                         }
 
-                        if (m_light_type != type)
-                        {
+                        if (m_light_type != type) {
                             m_light_type = type;
                             reset_light();
                         }
@@ -585,18 +560,15 @@ private:
                         ImGui::TreePop();
                         ImGui::Separator();
                     }
-                    if (ImGui::TreeNode("Camera"))
-                    {
+                    if (ImGui::TreeNode("Camera")) {
                         CameraType type = m_camera_type;
 
-                        if (ImGui::BeginCombo("Type", constants::camera_types[type].c_str()))
-                        {
-                            for (uint32_t i = 0; i < constants::camera_types.size(); i++)
-                            {
+                        if (ImGui::BeginCombo("Type", constants::camera_types[type].c_str())) {
+                            for (uint32_t i = 0; i < constants::camera_types.size(); i++) {
                                 const bool is_selected = (i == type);
 
                                 if (ImGui::Selectable(constants::camera_types[i].c_str(), is_selected))
-                                    type = (CameraType)i;
+                                    type = (CameraType) i;
 
                                 if (is_selected)
                                     ImGui::SetItemDefaultFocus();
@@ -604,24 +576,20 @@ private:
                             ImGui::EndCombo();
                         }
 
-                        if (type != m_camera_type)
-                        {
+                        if (type != m_camera_type) {
                             m_camera_type = type;
                             m_ground_truth_path_tracer->restart_accumulation();
                         }
 
-                        if (m_camera_type == CAMERA_TYPE_FIXED)
-                        {
+                        if (m_camera_type == CAMERA_TYPE_FIXED) {
                             uint32_t current_angle = m_current_fixed_camera_angle;
 
-                            if (ImGui::BeginCombo("Current Angle", std::to_string(current_angle).c_str()))
-                            {
-                                for (uint32_t i = 0; i < constants::fixed_camera_forward_vectors[m_common_resources->current_scene_type].size(); i++)
-                                {
+                            if (ImGui::BeginCombo("Current Angle", std::to_string(current_angle).c_str())) {
+                                for (uint32_t i = 0; i <
+                                                     constants::fixed_camera_forward_vectors[m_common_resources->current_scene_type].size(); i++) {
                                     const bool is_selected = (i == current_angle);
 
-                                    if (ImGui::Selectable(std::to_string(i).c_str(), is_selected))
-                                    {
+                                    if (ImGui::Selectable(std::to_string(i).c_str(), is_selected)) {
                                         current_angle = i;
                                         m_ground_truth_path_tracer->restart_accumulation();
                                     }
@@ -633,13 +601,10 @@ private:
                             }
 
                             m_current_fixed_camera_angle = current_angle;
-                        }
-                        else if (m_camera_type == CAMERA_TYPE_ANIMATED)
-                        {
+                        } else if (m_camera_type == CAMERA_TYPE_ANIMATED) {
                             bool is_playing = m_common_resources->demo_players[m_common_resources->current_scene_type]->is_playing();
 
-                            if (ImGui::Checkbox("Is Playing?", &is_playing))
-                            {
+                            if (ImGui::Checkbox("Is Playing?", &is_playing)) {
                                 if (is_playing)
                                     m_common_resources->demo_players[m_common_resources->current_scene_type]->play();
                                 else
@@ -647,12 +612,10 @@ private:
                             }
                         }
 
-                        if (m_camera_type != CAMERA_TYPE_ANIMATED)
-                        {
+                        if (m_camera_type != CAMERA_TYPE_ANIMATED) {
                             ImGui::SliderFloat("Speed", &m_camera_speed, 0.1f, 10.0f);
 
-                            if (ImGui::Checkbox("Side to Side motion", &m_side_to_side_motion))
-                            {
+                            if (ImGui::Checkbox("Side to Side motion", &m_side_to_side_motion)) {
                                 if (m_side_to_side_motion)
                                     m_side_to_side_motion_time = 0.0f;
 
@@ -660,29 +623,28 @@ private:
                             }
 
                             if (m_side_to_side_motion)
-                                ImGui::SliderFloat("Side to Side distance", &m_side_to_side_motion_distance, 0.1f, 20.0f);
+                                ImGui::SliderFloat("Side to Side distance", &m_side_to_side_motion_distance, 0.1f,
+                                                   20.0f);
                         }
 
                         ImGui::TreePop();
                         ImGui::Separator();
                     }
-                    if (ImGui::TreeNode("Ray Traced Shadows"))
-                    {
+                    if (ImGui::TreeNode("Ray Traced Shadows")) {
                         ImGui::PushID("Ray Traced Shadows");
 
                         RayTraceScale scale = m_ray_traced_shadows->scale();
 
-                        if (ImGui::BeginCombo("Scale", constants::ray_trace_scales[scale].c_str()))
-                        {
-                            for (uint32_t i = 0; i < constants::ray_trace_scales.size(); i++)
-                            {
+                        if (ImGui::BeginCombo("Scale", constants::ray_trace_scales[scale].c_str())) {
+                            for (uint32_t i = 0; i < constants::ray_trace_scales.size(); i++) {
                                 const bool is_selected = (i == scale);
 
-                                if (ImGui::Selectable(constants::ray_trace_scales[i].c_str(), is_selected))
-                                {
+                                if (ImGui::Selectable(constants::ray_trace_scales[i].c_str(), is_selected)) {
                                     m_vk_backend->wait_idle();
                                     m_ray_traced_shadows.reset();
-                                    m_ray_traced_shadows = std::unique_ptr<RayTracedShadows>(new RayTracedShadows(m_vk_backend, m_common_resources.get(), m_g_buffer.get(), (RayTraceScale)i));
+                                    m_ray_traced_shadows = std::unique_ptr<RayTracedShadows>(
+                                            new RayTracedShadows(m_vk_backend, m_common_resources.get(),
+                                                                 m_g_buffer.get(), (RayTraceScale) i));
                                 }
 
                                 if (is_selected)
@@ -701,23 +663,21 @@ private:
                         ImGui::TreePop();
                         ImGui::Separator();
                     }
-                    if (ImGui::TreeNode("Ray Traced Reflections"))
-                    {
+                    if (ImGui::TreeNode("Ray Traced Reflections")) {
                         ImGui::PushID("Ray Traced Reflections");
 
                         RayTraceScale scale = m_ray_traced_reflections->scale();
 
-                        if (ImGui::BeginCombo("Scale", constants::ray_trace_scales[scale].c_str()))
-                        {
-                            for (uint32_t i = 0; i < constants::ray_trace_scales.size(); i++)
-                            {
+                        if (ImGui::BeginCombo("Scale", constants::ray_trace_scales[scale].c_str())) {
+                            for (uint32_t i = 0; i < constants::ray_trace_scales.size(); i++) {
                                 const bool is_selected = (i == scale);
 
-                                if (ImGui::Selectable(constants::ray_trace_scales[i].c_str(), is_selected))
-                                {
+                                if (ImGui::Selectable(constants::ray_trace_scales[i].c_str(), is_selected)) {
                                     m_vk_backend->wait_idle();
                                     m_ray_traced_reflections.reset();
-                                    m_ray_traced_reflections = std::unique_ptr<RayTracedReflections>(new RayTracedReflections(m_vk_backend, m_common_resources.get(), m_g_buffer.get(), (RayTraceScale)i));
+                                    m_ray_traced_reflections = std::unique_ptr<RayTracedReflections>(
+                                            new RayTracedReflections(m_vk_backend, m_common_resources.get(),
+                                                                     m_g_buffer.get(), (RayTraceScale) i));
                                 }
 
                                 if (is_selected)
@@ -737,23 +697,21 @@ private:
                         ImGui::TreePop();
                         ImGui::Separator();
                     }
-                    if (ImGui::TreeNode("Ray Traced Ambient Occlusion"))
-                    {
+                    if (ImGui::TreeNode("Ray Traced Ambient Occlusion")) {
                         ImGui::PushID("Ray Traced Ambient Occlusion");
 
                         RayTraceScale scale = m_ray_traced_ao->scale();
 
-                        if (ImGui::BeginCombo("Scale", constants::ray_trace_scales[scale].c_str()))
-                        {
-                            for (uint32_t i = 0; i < constants::ray_trace_scales.size(); i++)
-                            {
+                        if (ImGui::BeginCombo("Scale", constants::ray_trace_scales[scale].c_str())) {
+                            for (uint32_t i = 0; i < constants::ray_trace_scales.size(); i++) {
                                 const bool is_selected = (i == scale);
 
-                                if (ImGui::Selectable(constants::ray_trace_scales[i].c_str(), is_selected))
-                                {
+                                if (ImGui::Selectable(constants::ray_trace_scales[i].c_str(), is_selected)) {
                                     m_vk_backend->wait_idle();
                                     m_ray_traced_ao.reset();
-                                    m_ray_traced_ao = std::unique_ptr<RayTracedAO>(new RayTracedAO(m_vk_backend, m_common_resources.get(), m_g_buffer.get(), (RayTraceScale)i));
+                                    m_ray_traced_ao = std::unique_ptr<RayTracedAO>(
+                                            new RayTracedAO(m_vk_backend, m_common_resources.get(), m_g_buffer.get(),
+                                                            (RayTraceScale) i));
                                 }
 
                                 if (is_selected)
@@ -772,23 +730,21 @@ private:
                         ImGui::TreePop();
                         ImGui::Separator();
                     }
-                    if (ImGui::TreeNode("Global Illumination"))
-                    {
+                    if (ImGui::TreeNode("Global Illumination")) {
                         ImGui::PushID("GUI_Global_Illumination");
 
                         RayTraceScale scale = m_ddgi->scale();
 
-                        if (ImGui::BeginCombo("Scale", constants::ray_trace_scales[scale].c_str()))
-                        {
-                            for (uint32_t i = 0; i < constants::ray_trace_scales.size(); i++)
-                            {
+                        if (ImGui::BeginCombo("Scale", constants::ray_trace_scales[scale].c_str())) {
+                            for (uint32_t i = 0; i < constants::ray_trace_scales.size(); i++) {
                                 const bool is_selected = (i == scale);
 
-                                if (ImGui::Selectable(constants::ray_trace_scales[i].c_str(), is_selected))
-                                {
+                                if (ImGui::Selectable(constants::ray_trace_scales[i].c_str(), is_selected)) {
                                     m_vk_backend->wait_idle();
                                     m_ddgi.reset();
-                                    m_ddgi = std::unique_ptr<DDGI>(new DDGI(m_vk_backend, m_common_resources.get(), m_g_buffer.get(), (RayTraceScale)i));
+                                    m_ddgi = std::unique_ptr<DDGI>(
+                                            new DDGI(m_vk_backend, m_common_resources.get(), m_g_buffer.get(),
+                                                     (RayTraceScale) i));
                                     set_active_scene();
                                 }
 
@@ -813,13 +769,11 @@ private:
                         ImGui::TreePop();
                         ImGui::Separator();
                     }
-                    if (ImGui::TreeNode("TAA"))
-                    {
+                    if (ImGui::TreeNode("TAA")) {
                         m_temporal_aa->gui();
                         ImGui::TreePop();
                     }
-                    if(ImGui::TreeNode("FxAA"))
-                    {
+                    if (ImGui::TreeNode("FxAA")) {
                         m_fast_approximate_aa->gui();
                         ImGui::TreePop();
                     }
@@ -834,8 +788,7 @@ private:
 
     // -----------------------------------------------------------------------------------------------------------------------------------
 
-    void directional_light_gui()
-    {
+    void directional_light_gui() {
         m_light_transform_operation = ImGuizmo::OPERATION::ROTATE;
 
         ImGui::ColorEdit3("Color", &m_light_color.x);
@@ -865,8 +818,7 @@ private:
 
     // -----------------------------------------------------------------------------------------------------------------------------------
 
-    void point_light_gui()
-    {
+    void point_light_gui() {
         ImGui::ColorEdit3("Color", &m_light_color.x);
         ImGui::InputFloat("Intensity", &m_light_intensity);
         ImGui::SliderFloat("Radius", &m_light_radius, 0.0f, 10.0f);
@@ -886,8 +838,7 @@ private:
 
     // -----------------------------------------------------------------------------------------------------------------------------------
 
-    void spot_light_gui()
-    {
+    void spot_light_gui() {
         ImGui::ColorEdit3("Color", &m_light_color.x);
         ImGui::InputFloat("Intensity", &m_light_intensity);
         ImGui::SliderFloat("Radius", &m_light_radius, 0.0f, 10.0f);
@@ -919,30 +870,24 @@ private:
 
     // -----------------------------------------------------------------------------------------------------------------------------------
 
-    void reset_light()
-    {
+    void reset_light() {
         m_light_transform = glm::mat4(1.0f);
 
-        if (m_common_resources->current_scene_type == SCENE_TYPE_SHADOWS_TEST)
-        {
-            if (m_light_type == LIGHT_TYPE_DIRECTIONAL)
-            {
-                m_light_radius    = 0.1f;
+        if (m_common_resources->current_scene_type == SCENE_TYPE_SHADOWS_TEST) {
+            if (m_light_type == LIGHT_TYPE_DIRECTIONAL) {
+                m_light_radius = 0.1f;
                 m_light_intensity = 1.0f;
 
-                m_light_transform = glm::rotate(m_light_transform, glm::radians(50.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(50.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-            }
-            else if (m_light_type == LIGHT_TYPE_POINT)
-            {
-                m_light_radius    = 2.5f;
+                m_light_transform = glm::rotate(m_light_transform, glm::radians(50.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+                                    glm::rotate(glm::mat4(1.0f), glm::radians(50.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+            } else if (m_light_type == LIGHT_TYPE_POINT) {
+                m_light_radius = 2.5f;
                 m_light_intensity = 500.0f;
 
                 m_light_transform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 0.0f));
-            }
-            else if (m_light_type == LIGHT_TYPE_SPOT)
-            {
-                m_light_radius           = 2.5f;
-                m_light_intensity        = 500.0f;
+            } else if (m_light_type == LIGHT_TYPE_SPOT) {
+                m_light_radius = 2.5f;
+                m_light_intensity = 500.0f;
                 m_light_cone_angle_inner = 40.0f;
                 m_light_cone_angle_outer = 50.0f;
 
@@ -951,27 +896,21 @@ private:
 
                 m_light_transform = T * R;
             }
-        }
-        else if (m_common_resources->current_scene_type == SCENE_TYPE_REFLECTIONS_TEST)
-        {
-            if (m_light_type == LIGHT_TYPE_DIRECTIONAL)
-            {
-                m_light_radius    = 0.1f;
+        } else if (m_common_resources->current_scene_type == SCENE_TYPE_REFLECTIONS_TEST) {
+            if (m_light_type == LIGHT_TYPE_DIRECTIONAL) {
+                m_light_radius = 0.1f;
                 m_light_intensity = 1.0f;
 
-                m_light_transform = glm::rotate(m_light_transform, glm::radians(-35.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(-60.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-            }
-            else if (m_light_type == LIGHT_TYPE_POINT)
-            {
-                m_light_radius    = 2.5f;
+                m_light_transform = glm::rotate(m_light_transform, glm::radians(-35.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+                                    glm::rotate(glm::mat4(1.0f), glm::radians(-60.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+            } else if (m_light_type == LIGHT_TYPE_POINT) {
+                m_light_radius = 2.5f;
                 m_light_intensity = 500.0f;
 
                 m_light_transform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 10.0f, 0.0f));
-            }
-            else if (m_light_type == LIGHT_TYPE_SPOT)
-            {
-                m_light_radius           = 2.5f;
-                m_light_intensity        = 5000.0f;
+            } else if (m_light_type == LIGHT_TYPE_SPOT) {
+                m_light_radius = 2.5f;
+                m_light_intensity = 5000.0f;
                 m_light_cone_angle_inner = 40.0f;
                 m_light_cone_angle_outer = 50.0f;
 
@@ -980,27 +919,21 @@ private:
 
                 m_light_transform = T * R;
             }
-        }
-        else if (m_common_resources->current_scene_type == SCENE_TYPE_GLOBAL_ILLUMINATION_TEST)
-        {
-            if (m_light_type == LIGHT_TYPE_DIRECTIONAL)
-            {
-                m_light_radius    = 0.1f;
+        } else if (m_common_resources->current_scene_type == SCENE_TYPE_GLOBAL_ILLUMINATION_TEST) {
+            if (m_light_type == LIGHT_TYPE_DIRECTIONAL) {
+                m_light_radius = 0.1f;
                 m_light_intensity = 1.0f;
 
-                m_light_transform = glm::rotate(m_light_transform, glm::radians(50.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(50.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-            }
-            else if (m_light_type == LIGHT_TYPE_POINT)
-            {
-                m_light_radius    = 2.5f;
+                m_light_transform = glm::rotate(m_light_transform, glm::radians(50.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+                                    glm::rotate(glm::mat4(1.0f), glm::radians(50.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+            } else if (m_light_type == LIGHT_TYPE_POINT) {
+                m_light_radius = 2.5f;
                 m_light_intensity = 100.0f;
 
                 m_light_transform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 4.0f, 2.0f));
-            }
-            else if (m_light_type == LIGHT_TYPE_SPOT)
-            {
-                m_light_radius           = 2.5f;
-                m_light_intensity        = 1000.0f;
+            } else if (m_light_type == LIGHT_TYPE_SPOT) {
+                m_light_radius = 2.5f;
+                m_light_intensity = 1000.0f;
                 m_light_cone_angle_inner = 8.0f;
                 m_light_cone_angle_outer = 20.0f;
 
@@ -1009,27 +942,21 @@ private:
 
                 m_light_transform = T * R;
             }
-        }
-        else if (m_common_resources->current_scene_type == SCENE_TYPE_SPONZA)
-        {
-            if (m_light_type == LIGHT_TYPE_DIRECTIONAL)
-            {
-                m_light_radius    = 0.08f;
+        } else if (m_common_resources->current_scene_type == SCENE_TYPE_SPONZA) {
+            if (m_light_type == LIGHT_TYPE_DIRECTIONAL) {
+                m_light_radius = 0.08f;
                 m_light_intensity = 10.0f;
 
-                m_light_transform = glm::rotate(m_light_transform, glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(-10.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-            }
-            else if (m_light_type == LIGHT_TYPE_POINT)
-            {
-                m_light_radius    = 4.0f;
+                m_light_transform = glm::rotate(m_light_transform, glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f)) *
+                                    glm::rotate(glm::mat4(1.0f), glm::radians(-10.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+            } else if (m_light_type == LIGHT_TYPE_POINT) {
+                m_light_radius = 4.0f;
                 m_light_intensity = 50000.0f;
 
                 m_light_transform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 130.0f, 0.0f));
-            }
-            else if (m_light_type == LIGHT_TYPE_SPOT)
-            {
-                m_light_radius           = 6.5f;
-                m_light_intensity        = 500000.0f;
+            } else if (m_light_type == LIGHT_TYPE_SPOT) {
+                m_light_radius = 6.5f;
+                m_light_intensity = 500000.0f;
                 m_light_cone_angle_inner = 10.0f;
                 m_light_cone_angle_outer = 30.0f;
 
@@ -1038,41 +965,36 @@ private:
 
                 m_light_transform = T * R;
             }
-        }
-        else if (m_common_resources->current_scene_type == SCENE_TYPE_PICA_PICA)
-        {
-            if (m_light_type == LIGHT_TYPE_DIRECTIONAL)
-            {
-                m_light_radius    = 0.1f;
+        } else if (m_common_resources->current_scene_type == SCENE_TYPE_PICA_PICA) {
+            if (m_light_type == LIGHT_TYPE_DIRECTIONAL) {
+                m_light_radius = 0.1f;
                 m_light_intensity = 1.0f;
 
-                m_light_transform = glm::rotate(m_light_transform, glm::radians(-45.0f), glm::vec3(0.0f, 0.0f, 1.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(15.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-            }
-            else if (m_light_type == LIGHT_TYPE_POINT)
-            {
-                m_light_radius    = 2.5f;
+                m_light_transform = glm::rotate(m_light_transform, glm::radians(-45.0f), glm::vec3(0.0f, 0.0f, 1.0f)) *
+                                    glm::rotate(glm::mat4(1.0f), glm::radians(15.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            } else if (m_light_type == LIGHT_TYPE_POINT) {
+                m_light_radius = 2.5f;
                 m_light_intensity = 500.0f;
 
                 m_light_transform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 15.0f, 0.0f));
-            }
-            else if (m_light_type == LIGHT_TYPE_SPOT)
-            {
-                m_light_radius           = 2.5f;
-                m_light_intensity        = 500.0f;
+            } else if (m_light_type == LIGHT_TYPE_SPOT) {
+                m_light_radius = 2.5f;
+                m_light_intensity = 500.0f;
                 m_light_cone_angle_inner = 40.0f;
                 m_light_cone_angle_outer = 50.0f;
 
-                glm::mat4 R = glm::rotate(m_light_transform, glm::radians(-30.0f), glm::vec3(0.0f, 1.0f, 0.0f)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+                glm::mat4 R = glm::rotate(m_light_transform, glm::radians(-30.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
+                              glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
                 glm::mat4 T = glm::translate(glm::mat4(1.0f), glm::vec3(-10.0f, 6.0f, 20.0f));
 
                 m_light_transform = T * R;
             }
         }
 
-        if (m_common_resources->current_environment_type == ENVIRONMENT_TYPE_PROCEDURAL_SKY && m_light_type != LIGHT_TYPE_DIRECTIONAL)
-        {
+        if (m_common_resources->current_environment_type == ENVIRONMENT_TYPE_PROCEDURAL_SKY &&
+            m_light_type != LIGHT_TYPE_DIRECTIONAL) {
             m_common_resources->current_environment_type = ENVIRONMENT_TYPE_NONE;
-            m_common_resources->current_skybox_ds        = m_common_resources->skybox_ds[m_common_resources->current_environment_type];
+            m_common_resources->current_skybox_ds = m_common_resources->skybox_ds[m_common_resources->current_environment_type];
         }
 
         m_ground_truth_path_tracer->restart_accumulation();
@@ -1080,26 +1002,27 @@ private:
 
     // -----------------------------------------------------------------------------------------------------------------------------------
 
-    void update_uniforms(dw::vk::CommandBuffer::Ptr cmd_buf)
-    {
+    void update_uniforms(dw::vk::CommandBuffer::Ptr cmd_buf) {
         DW_SCOPED_SAMPLE("Update Uniforms", cmd_buf);
 
         glm::mat4 current_jitter = glm::translate(glm::mat4(1.0f), glm::vec3(m_temporal_aa->current_jitter(), 0.0f));
 
-        m_common_resources->view                 = m_main_camera->m_view;
-        m_common_resources->projection           = m_temporal_aa->enabled() ? current_jitter * m_main_camera->m_projection : m_main_camera->m_projection;
+        m_common_resources->view = m_main_camera->m_view;
+        m_common_resources->projection = m_temporal_aa->enabled() ? current_jitter * m_main_camera->m_projection
+                                                                  : m_main_camera->m_projection;
         m_common_resources->prev_view_projection = m_main_camera->m_prev_view_projection;
-        m_common_resources->position             = m_main_camera->m_position;
+        m_common_resources->position = m_main_camera->m_position;
 
         m_light_direction = glm::normalize(glm::mat3(m_light_transform) * glm::vec3(0.0f, -1.0f, 0.0f));
-        m_light_position  = glm::vec3(m_light_transform[3][0], m_light_transform[3][1], m_light_transform[3][2]);
+        m_light_position = glm::vec3(m_light_transform[3][0], m_light_transform[3][1], m_light_transform[3][2]);
 
-        m_ubo_data.proj_inverse        = glm::inverse(m_common_resources->projection);
-        m_ubo_data.view_inverse        = glm::inverse(m_common_resources->view);
-        m_ubo_data.view_proj           = m_common_resources->projection * m_common_resources->view;
-        m_ubo_data.view_proj_inverse   = glm::inverse(m_ubo_data.view_proj);
-        m_ubo_data.prev_view_proj      = m_common_resources->first_frame ? m_common_resources->prev_view_projection : current_jitter * m_common_resources->prev_view_projection;
-        m_ubo_data.cam_pos             = glm::vec4(m_common_resources->position, float(m_deferred_shading->use_ray_traced_ao()));
+        m_ubo_data.proj_inverse = glm::inverse(m_common_resources->projection);
+        m_ubo_data.view_inverse = glm::inverse(m_common_resources->view);
+        m_ubo_data.view_proj = m_common_resources->projection * m_common_resources->view;
+        m_ubo_data.view_proj_inverse = glm::inverse(m_ubo_data.view_proj);
+        m_ubo_data.prev_view_proj = m_common_resources->first_frame ? m_common_resources->prev_view_projection :
+                                    current_jitter * m_common_resources->prev_view_projection;
+        m_ubo_data.cam_pos = glm::vec4(m_common_resources->position, float(m_deferred_shading->use_ray_traced_ao()));
         m_ubo_data.current_prev_jitter = glm::vec4(m_temporal_aa->current_jitter(), m_temporal_aa->prev_jitter());
 
         m_ubo_data.light.set_light_radius(m_light_radius);
@@ -1113,16 +1036,14 @@ private:
 
         m_main_camera->m_prev_view_projection = m_ubo_data.view_proj;
 
-        uint8_t* ptr = (uint8_t*)m_common_resources->ubo->mapped_ptr();
+        uint8_t *ptr = (uint8_t *) m_common_resources->ubo->mapped_ptr();
         memcpy(ptr + m_common_resources->ubo_size * m_vk_backend->current_frame_idx(), &m_ubo_data, sizeof(UBO));
     }
 
     // -----------------------------------------------------------------------------------------------------------------------------------
 
-    void update_ibl(dw::vk::CommandBuffer::Ptr cmd_buf)
-    {
-        if (m_common_resources->current_environment_type == ENVIRONMENT_TYPE_PROCEDURAL_SKY)
-        {
+    void update_ibl(dw::vk::CommandBuffer::Ptr cmd_buf) {
+        if (m_common_resources->current_environment_type == ENVIRONMENT_TYPE_PROCEDURAL_SKY) {
             m_common_resources->sky_environment->hosek_wilkie_sky_model->update(cmd_buf, -m_light_direction);
 
             {
@@ -1137,27 +1058,24 @@ private:
 
     // -----------------------------------------------------------------------------------------------------------------------------------
 
-    void update_light_animation()
-    {
-        if (m_light_animation)
-        {
-            if (m_common_resources->current_scene_type == SCENE_TYPE_GLOBAL_ILLUMINATION_TEST && m_light_type == LIGHT_TYPE_SPOT)
-            {
+    void update_light_animation() {
+        if (m_light_animation) {
+            if (m_common_resources->current_scene_type == SCENE_TYPE_GLOBAL_ILLUMINATION_TEST &&
+                m_light_type == LIGHT_TYPE_SPOT) {
                 float t = sinf(m_light_animation_time) * 0.5f + 0.5f;
 
                 glm::mat4 R = glm::rotate(glm::mat4(1.0f), glm::radians(70.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-                glm::mat4 T = glm::translate(glm::mat4(1.0f), glm::mix(glm::vec3(-8.25f, 7.5f, 6.0f), glm::vec3(0.25f, 7.5f, 6.0f), t));
+                glm::mat4 T = glm::translate(glm::mat4(1.0f),
+                                             glm::mix(glm::vec3(-8.25f, 7.5f, 6.0f), glm::vec3(0.25f, 7.5f, 6.0f), t));
 
                 m_light_transform = T * R;
-            }
-            else if (m_light_type == LIGHT_TYPE_DIRECTIONAL)
-            {
+            } else if (m_light_type == LIGHT_TYPE_DIRECTIONAL) {
                 double time = glfwGetTime() * 0.5f;
 
                 m_light_direction.x = sinf(time);
                 m_light_direction.z = cosf(time);
                 m_light_direction.y = 1.0f;
-                m_light_direction   = glm::normalize(m_light_direction);
+                m_light_direction = glm::normalize(m_light_direction);
             }
 
             m_light_animation_time += m_delta_seconds;
@@ -1166,13 +1084,11 @@ private:
 
     // -----------------------------------------------------------------------------------------------------------------------------------
 
-    void update_camera()
-    {
+    void update_camera() {
         m_temporal_aa->update();
 
-        if (m_camera_type == CAMERA_TYPE_FREE)
-        {
-            float forward_delta  = m_heading_speed * m_delta;
+        if (m_camera_type == CAMERA_TYPE_FREE) {
+            float forward_delta = m_heading_speed * m_delta;
             float sideways_delta = m_sideways_speed * m_delta;
 
             m_main_camera->set_translation_delta(m_main_camera->m_forward, forward_delta);
@@ -1184,51 +1100,50 @@ private:
             m_camera_x = m_mouse_delta_x * m_camera_sensitivity;
             m_camera_y = m_mouse_delta_y * m_camera_sensitivity;
 
-            if (m_mouse_look)
-            {
+            if (m_mouse_look) {
                 // Activate Mouse Look
-                m_main_camera->set_rotatation_delta(glm::vec3((float)(m_camera_y),
-                                                              (float)(m_camera_x),
-                                                              (float)(0.0f)));
+                m_main_camera->set_rotatation_delta(glm::vec3((float) (m_camera_y),
+                                                              (float) (m_camera_x),
+                                                              (float) (0.0f)));
                 m_ground_truth_path_tracer->restart_accumulation();
-            }
-            else
-            {
-                m_main_camera->set_rotatation_delta(glm::vec3((float)(0),
-                                                              (float)(0),
-                                                              (float)(0)));
+            } else {
+                m_main_camera->set_rotatation_delta(glm::vec3((float) (0),
+                                                              (float) (0),
+                                                              (float) (0)));
             }
 
-            if (m_side_to_side_motion)
-            {
-                m_main_camera->set_position(m_side_to_side_start_pos + m_main_camera->m_right * sinf(static_cast<float>(m_side_to_side_motion_time)) * m_side_to_side_motion_distance);
+            if (m_side_to_side_motion) {
+                m_main_camera->set_position(m_side_to_side_start_pos + m_main_camera->m_right *
+                                                                       sinf(static_cast<float>(m_side_to_side_motion_time)) *
+                                                                       m_side_to_side_motion_distance);
                 m_side_to_side_motion_time += m_delta * 0.005f;
             }
 
             m_main_camera->update();
-        }
-        else if (m_camera_type == CAMERA_TYPE_FIXED)
-            m_main_camera->update_from_frame(constants::fixed_camera_position_vectors[m_common_resources->current_scene_type][m_current_fixed_camera_angle], constants::fixed_camera_forward_vectors[m_common_resources->current_scene_type][m_current_fixed_camera_angle], constants::fixed_camera_right_vectors[m_common_resources->current_scene_type][m_current_fixed_camera_angle]);
+        } else if (m_camera_type == CAMERA_TYPE_FIXED)
+            m_main_camera->update_from_frame(
+                    constants::fixed_camera_position_vectors[m_common_resources->current_scene_type][m_current_fixed_camera_angle],
+                    constants::fixed_camera_forward_vectors[m_common_resources->current_scene_type][m_current_fixed_camera_angle],
+                    constants::fixed_camera_right_vectors[m_common_resources->current_scene_type][m_current_fixed_camera_angle]);
         else
-            m_common_resources->demo_players[m_common_resources->current_scene_type]->update(m_delta, m_main_camera.get());
+            m_common_resources->demo_players[m_common_resources->current_scene_type]->update(m_delta,
+                                                                                             m_main_camera.get());
 
-        m_common_resources->frame_time    = m_delta_seconds;
-        m_common_resources->camera_delta  = m_main_camera->m_position - m_common_resources->prev_position;
+        m_common_resources->frame_time = m_delta_seconds;
+        m_common_resources->camera_delta = m_main_camera->m_position - m_common_resources->prev_position;
         m_common_resources->prev_position = m_main_camera->m_position;
     }
 
     // -----------------------------------------------------------------------------------------------------------------------------------
 
-    void set_active_scene()
-    {
+    void set_active_scene() {
         m_current_fixed_camera_angle = 0;
-        m_light_animation_time       = 0.0f;
-        m_camera_type                = CAMERA_TYPE_FREE;
+        m_light_animation_time = 0.0f;
+        m_camera_type = CAMERA_TYPE_FREE;
 
         m_common_resources->demo_players[m_common_resources->current_scene_type]->stop();
 
-        if (m_common_resources->current_scene_type == SCENE_TYPE_SHADOWS_TEST)
-        {
+        if (m_common_resources->current_scene_type == SCENE_TYPE_SHADOWS_TEST) {
             m_ddgi->set_normal_bias(1.0f);
             m_ddgi->set_probe_distance(4.0f);
             m_ddgi->set_infinite_bounce_intensity(1.7f);
@@ -1236,9 +1151,7 @@ private:
             m_deferred_shading->set_probe_visualization_scale(0.5f);
             m_camera_speed = 2.0f;
             m_main_camera->set_position(glm::vec3(0.321986f, 7.552417f, 28.927477f));
-        }
-        else if (m_common_resources->current_scene_type == SCENE_TYPE_REFLECTIONS_TEST)
-        {
+        } else if (m_common_resources->current_scene_type == SCENE_TYPE_REFLECTIONS_TEST) {
             m_ddgi->set_normal_bias(1.0f);
             m_ddgi->set_probe_distance(4.0f);
             m_ddgi->set_infinite_bounce_intensity(1.7f);
@@ -1246,20 +1159,16 @@ private:
             m_deferred_shading->set_probe_visualization_scale(0.5f);
             m_camera_speed = 0.1f;
             m_main_camera->set_position(glm::vec3(1.449991f, 8.761821f, 33.413113f));
-        }
-        else if (m_common_resources->current_scene_type == SCENE_TYPE_GLOBAL_ILLUMINATION_TEST)
-        {
+        } else if (m_common_resources->current_scene_type == SCENE_TYPE_GLOBAL_ILLUMINATION_TEST) {
             m_ddgi->set_normal_bias(1.0f);
             m_ddgi->set_probe_distance(4.0f);
             m_ddgi->set_infinite_bounce_intensity(0.8f);
             m_ddgi->restart_accumulation();
             m_deferred_shading->set_probe_visualization_scale(0.5f);
-            m_light_type   = LIGHT_TYPE_SPOT;
+            m_light_type = LIGHT_TYPE_SPOT;
             m_camera_speed = 0.1f;
             m_main_camera->set_position(glm::vec3(1.628197f, 4.763937f, 4.361343f));
-        }
-        else if (m_common_resources->current_scene_type == SCENE_TYPE_SPONZA)
-        {
+        } else if (m_common_resources->current_scene_type == SCENE_TYPE_SPONZA) {
             m_ddgi->set_normal_bias(0.1f);
             m_ddgi->set_probe_distance(50.0f);
             m_ddgi->set_infinite_bounce_intensity(1.7f);
@@ -1267,9 +1176,7 @@ private:
             m_deferred_shading->set_probe_visualization_scale(5.0f);
             m_camera_speed = 2.0f;
             m_main_camera->set_position(glm::vec3(279.537201f, 35.164913f, -20.101242f));
-        }
-        else if (m_common_resources->current_scene_type == SCENE_TYPE_PICA_PICA)
-        {
+        } else if (m_common_resources->current_scene_type == SCENE_TYPE_PICA_PICA) {
             m_ddgi->set_normal_bias(1.0f);
             m_ddgi->set_probe_distance(4.0f);
             m_ddgi->set_infinite_bounce_intensity(1.7f);
@@ -1285,33 +1192,33 @@ private:
     // -----------------------------------------------------------------------------------------------------------------------------------
 
 private:
-    std::unique_ptr<CommonResources>       m_common_resources;
-    std::unique_ptr<GBuffer>               m_g_buffer;
-    std::unique_ptr<DeferredShading>       m_deferred_shading;
-    std::unique_ptr<RayTracedShadows>      m_ray_traced_shadows;
-    std::unique_ptr<RayTracedAO>           m_ray_traced_ao;
-    std::unique_ptr<RayTracedReflections>  m_ray_traced_reflections;
-    std::unique_ptr<DDGI>                  m_ddgi;
+    std::unique_ptr<CommonResources> m_common_resources;
+    std::unique_ptr<GBuffer> m_g_buffer;
+    std::unique_ptr<DeferredShading> m_deferred_shading;
+    std::unique_ptr<RayTracedShadows> m_ray_traced_shadows;
+    std::unique_ptr<RayTracedAO> m_ray_traced_ao;
+    std::unique_ptr<RayTracedReflections> m_ray_traced_reflections;
+    std::unique_ptr<DDGI> m_ddgi;
     std::unique_ptr<GroundTruthPathTracer> m_ground_truth_path_tracer;
-    std::unique_ptr<TemporalAA>            m_temporal_aa;
-    std::unique_ptr<ToneMap>               m_tone_map;
-    std::unique_ptr<FastApproximateAA>     m_fast_approximate_aa;
+    std::unique_ptr<TemporalAA> m_temporal_aa;
+    std::unique_ptr<ToneMap> m_tone_map;
+    std::unique_ptr<FastApproximateAA> m_fast_approximate_aa;
 
     // Camera.
-    CameraType                  m_camera_type                = CAMERA_TYPE_FREE;
-    uint32_t                    m_current_fixed_camera_angle = 0;
+    CameraType m_camera_type = CAMERA_TYPE_FREE;
+    uint32_t m_current_fixed_camera_angle = 0;
     std::unique_ptr<dw::Camera> m_main_camera;
-    bool                        m_mouse_look                   = false;
-    float                       m_heading_speed                = 0.0f;
-    float                       m_sideways_speed               = 0.0f;
-    float                       m_camera_sensitivity           = 0.05f;
-    float                       m_camera_speed                 = 2.0f;
-    float                       m_offset                       = 0.1f;
-    float                       m_side_to_side_motion_time     = 0.0f;
-    float                       m_side_to_side_motion_distance = 5.0f;
-    glm::vec3                   m_side_to_side_start_pos       = glm::vec3(0.0f);
-    bool                        m_side_to_side_motion          = false;
-    bool                        m_debug_gui                    = false;
+    bool m_mouse_look = false;
+    float m_heading_speed = 0.0f;
+    float m_sideways_speed = 0.0f;
+    float m_camera_sensitivity = 0.05f;
+    float m_camera_speed = 2.0f;
+    float m_offset = 0.1f;
+    float m_side_to_side_motion_time = 0.0f;
+    float m_side_to_side_motion_distance = 5.0f;
+    glm::vec3 m_side_to_side_start_pos = glm::vec3(0.0f);
+    bool m_side_to_side_motion = false;
+    bool m_debug_gui = false;
 
     // Camera orientation.
     float m_camera_x;
@@ -1319,17 +1226,17 @@ private:
 
     // Light
     ImGuizmo::OPERATION m_light_transform_operation = ImGuizmo::OPERATION::ROTATE;
-    glm::mat4           m_light_transform           = glm::mat4(1.0f);
-    float               m_light_radius              = 0.1f;
-    glm::vec3           m_light_direction           = glm::normalize(glm::vec3(0.568f, 0.707f, -0.421f));
-    glm::vec3           m_light_position            = glm::vec3(5.0f);
-    glm::vec3           m_light_color               = glm::vec3(1.0f);
-    float               m_light_intensity           = 1.0f;
-    float               m_light_cone_angle_inner    = 40.0f;
-    float               m_light_cone_angle_outer    = 50.0f;
-    float               m_light_animation_time      = 0.0f;
-    bool                m_light_animation           = false;
-    LightType           m_light_type                = LIGHT_TYPE_DIRECTIONAL;
+    glm::mat4 m_light_transform = glm::mat4(1.0f);
+    float m_light_radius = 0.1f;
+    glm::vec3 m_light_direction = glm::normalize(glm::vec3(0.568f, 0.707f, -0.421f));
+    glm::vec3 m_light_position = glm::vec3(5.0f);
+    glm::vec3 m_light_color = glm::vec3(1.0f);
+    float m_light_intensity = 1.0f;
+    float m_light_cone_angle_inner = 40.0f;
+    float m_light_cone_angle_outer = 50.0f;
+    float m_light_animation_time = 0.0f;
+    bool m_light_animation = false;
+    LightType m_light_type = LIGHT_TYPE_DIRECTIONAL;
 
     // Uniforms.
     UBO m_ubo_data;

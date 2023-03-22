@@ -251,6 +251,16 @@ float GetEdgeBlend(sampler2D tex, vec2 uv,FXAAEdge edge, FXAACrossData crossData
     return 0.5 - dst / (dstP + dstN);
 }
 
+vec3 aces_film(vec3 x)
+{
+    float a = 2.51f;
+    float b = 0.03f;
+    float c = 2.43f;
+    float d = 0.59f;
+    float e = 0.14f;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0f, 1.0f);
+}
+
 // ------------------------------------------------------------------------
 // MAIN -------------------------------------------------------------------
 // ------------------------------------------------------------------------
@@ -309,7 +319,11 @@ void main()
             outColor = vec4(rgblM.rgb,1);
     }
 
-    FS_OUT_Color = vec4(pow(outColor.rgb, vec3(1.0 / 2.2)).rgb,1);
+    // HDR tonemap and gamma correct
+    outColor.rgb = aces_film(outColor.rgb);
+    outColor.rgb = pow(outColor.rgb, vec3(1.0 / 2.2));
+
+    FS_OUT_Color = vec4(outColor.rgb, 1.0);
 }
 
 // ------------------------------------------------------------------------
