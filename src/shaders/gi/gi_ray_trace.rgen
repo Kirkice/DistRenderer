@@ -67,7 +67,7 @@ vec3 spherical_fibonacci(float i, float n)
     float sin_theta = sqrt(clamp(1.0 - cos_theta * cos_theta, 0.0f, 1.0f));
 
     return vec3(cos(phi) * sin_theta, sin(phi) * sin_theta, cos_theta);
-
+  
 #undef madfrac
 }
 
